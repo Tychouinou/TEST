@@ -6,9 +6,9 @@
     <title>Vote - Vote Musical</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Firebase SDK (versions compat) -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <!-- Firebase SDK - Version 8 (plus ancienne mais 100% compatible) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
     <header>
@@ -24,17 +24,13 @@
 
     <main class="container">
         <h1>Votez pour votre musique préférée</h1>
-        <p class="subtitle">Cliquez sur le bouton "Voter" pour donner votre voix. Une seule voix par personne !</p>
+        <p class="subtitle">Cliquez sur "Voter" (une seule fois par navigateur)</p>
 
-        <div class="songs-grid" id="songsGrid">
-            <!-- Les cartes seront générées par JavaScript -->
-        </div>
+        <div class="songs-grid" id="songsGrid"></div>
 
         <div class="results">
             <h2>Résultats des votes</h2>
-            <div id="resultsChart" class="results-chart">
-                <!-- Les barres de résultats seront générées dynamiquement -->
-            </div>
+            <div id="resultsChart" class="results-chart"></div>
         </div>
     </main>
 
@@ -43,8 +39,8 @@
     </footer>
 
     <script>
-        // ==================== CONFIGURATION FIREBASE ====================
-        const firebaseConfig = {
+        // ========== CONFIGURATION FIREBASE (version 8) ==========
+        firebase.initializeApp({
             apiKey: "AIzaSyA1JNHr7GYMMQGhpHFnX4zH0_1vJ4OfRXo",
             authDomain: "testvotecommun.firebaseapp.com",
             databaseURL: "https://testvotecommun-default-rtdb.firebaseio.com/",
@@ -52,13 +48,12 @@
             storageBucket: "testvotecommun.firebasestorage.app",
             messagingSenderId: "1024528698634",
             appId: "1:1024528698634:web:3427a41ce0d6f37c0dfef3"
-        };
+        });
 
-        // Initialiser Firebase (version compat)
-        firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+        const votesRef = database.ref('votes');
 
-        // ==================== DONNÉES ====================
+        // ========== LISTE DES MUSIQUES ==========
         const songs = [
             { id: 1, title: "Amon Tobin - Trickstep (Pacific Rift Mix)", file: "asset/song/Amon Tobin - Trickstep (Pacific Rift Mix) (MotorStorm Pacific Rift OST).mp3" },
             { id: 2, title: "Animal Alpha - Fire! Fire! Fire!", file: "asset/song/Animal Alpha - Fire! Fire! Fire! (MotorStorm Pacific Rift OST).mp3" },
@@ -68,62 +63,44 @@
             { id: 6, title: "OIIA x We Wish You a Merry Christmas", file: "asset/song/OIIA x We Wish You a Merry Christmas (Full Audio) [4K].mp3" }
         ];
 
-        // Référence Firebase vers le nœud "votes"
-        const votesRef = database.ref('votes');
-
-        // Clé localStorage pour savoir si ce navigateur a déjà voté
+        // ========== VOTE UNIQUE ==========
         const VOTED_KEY = 'hasVoted';
         let hasVoted = localStorage.getItem(VOTED_KEY) === 'true';
 
-        // ==================== FONCTIONS D'AFFICHAGE ====================
-        function updateResults(snapshot) {
+        // ========== AFFICHAGE DES RÉSULTATS ==========
+        function displayAll(snapshot) {
             const votes = snapshot.val() || {};
-            const resultsDiv = document.getElementById('resultsChart');
-            const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0);
+            
+            // Calculer le total
+            let total = 0;
+            for(let key in votes) total += votes[key];
+            
+            // Mettre à jour les badges
+            songs.forEach(song => {
+                const badge = document.getElementById(`vote-${song.id}`);
+                if(badge) badge.textContent = (votes[song.id] || 0) + ' voix';
+            });
+            
+            // Mettre à jour les barres de résultats
             let html = '';
             songs.forEach(song => {
                 const count = votes[song.id] || 0;
-                const percentage = totalVotes > 0 ? (count / totalVotes * 100).toFixed(1) : 0;
+                const percent = total ? (count / total * 100).toFixed(1) : 0;
                 html += `
                     <div class="result-bar">
-                        <span class="song-title">${song.title}</span>
+                        <span class="song-title">${song.title.substring(0, 20)}...</span>
                         <div class="bar-container">
-                            <div class="bar" style="width: ${percentage}%;"></div>
+                            <div class="bar" style="width:${percent}%"></div>
                         </div>
-                        <span class="vote-count">${count} voix (${percentage}%)</span>
+                        <span class="vote-count">${count} voix (${percent}%)</span>
                     </div>
                 `;
             });
-            resultsDiv.innerHTML = html;
+            document.getElementById('resultsChart').innerHTML = html || '<p>Aucun vote pour le moment</p>';
         }
 
-        function updateBadges(snapshot) {
-            const votes = snapshot.val() || {};
-            songs.forEach(song => {
-                const badge = document.getElementById(`vote-${song.id}`);
-                if (badge) {
-                    badge.textContent = (votes[song.id] || 0) + ' voix';
-                }
-            });
-        }
-
-        function disableVoteButtons() {
-            document.querySelectorAll('.vote-btn').forEach(btn => {
-                btn.disabled = true;
-                btn.style.opacity = '0.5';
-                btn.style.cursor = 'not-allowed';
-            });
-            let messageDiv = document.getElementById('voteMessage');
-            if (!messageDiv) {
-                messageDiv = document.createElement('div');
-                messageDiv.id = 'voteMessage';
-                messageDiv.className = 'vote-message';
-                document.querySelector('.songs-grid').insertAdjacentElement('afterend', messageDiv);
-            }
-            messageDiv.textContent = '✅ Vous avez déjà voté. Merci de votre participation !';
-        }
-
-        function renderSongs() {
+        // ========== CRÉATION DES CARTES ==========
+        function buildSongs() {
             const grid = document.getElementById('songsGrid');
             grid.innerHTML = '';
             songs.forEach(song => {
@@ -138,39 +115,58 @@
                 grid.appendChild(card);
             });
 
-            if (hasVoted) {
-                disableVoteButtons();
+            // Désactiver si déjà voté
+            if(hasVoted) {
+                document.querySelectorAll('.vote-btn').forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                });
+                showMessage('✅ Vous avez déjà voté');
             }
 
+            // Événements de vote
             document.querySelectorAll('.vote-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    if (hasVoted) {
+                btn.addEventListener('click', function(e) {
+                    if(hasVoted) {
                         alert('Vous avez déjà voté !');
                         return;
                     }
-                    const id = e.target.getAttribute('data-id');
-                    const songVoteRef = database.ref('votes/' + id);
-                    songVoteRef.transaction((currentVotes) => {
-                        return (currentVotes || 0) + 1;
+                    const id = this.dataset.id;
+                    
+                    // Incrémenter dans Firebase
+                    votesRef.child(id).transaction(function(current) {
+                        return (current || 0) + 1;
                     }).then(() => {
                         hasVoted = true;
                         localStorage.setItem(VOTED_KEY, 'true');
-                        disableVoteButtons();
-                    }).catch((error) => {
-                        console.error("Erreur de vote : ", error);
-                        alert("Une erreur est survenue. Veuillez réessayer.");
+                        document.querySelectorAll('.vote-btn').forEach(b => {
+                            b.disabled = true;
+                            b.style.opacity = '0.5';
+                        });
+                        showMessage('✅ Merci pour votre vote !');
+                    }).catch(error => {
+                        alert('Erreur: ' + error.message);
                     });
                 });
             });
         }
 
-        // ==================== INITIALISATION ====================
-        votesRef.on('value', (snapshot) => {
-            updateResults(snapshot);
-            updateBadges(snapshot);
-        });
+        function showMessage(text) {
+            let msg = document.getElementById('voteMessage');
+            if(!msg) {
+                msg = document.createElement('div');
+                msg.id = 'voteMessage';
+                msg.className = 'vote-message';
+                document.querySelector('.songs-grid').after(msg);
+            }
+            msg.textContent = text;
+        }
 
-        renderSongs();
+        // ========== ÉCOUTE EN TEMPS RÉEL ==========
+        votesRef.on('value', displayAll);
+
+        // ========== DÉMARRAGE ==========
+        buildSongs();
     </script>
 </body>
 </html>
