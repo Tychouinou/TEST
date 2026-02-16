@@ -342,3 +342,15 @@ footer {
         align-self: flex-end;
     }
 }
+
+/* Message de vote */
+.vote-message {
+    background-color: #27ae60;
+    color: #fff;
+    text-align: center;
+    padding: 1rem;
+    border-radius: 5px;
+    margin: 2rem 0;
+    font-weight: 600;
+    font-size: 1.2rem;
+}

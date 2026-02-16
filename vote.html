@@ -21,7 +21,7 @@
 
     <main class="container">
         <h1>Votez pour votre musique préférée</h1>
-        <p class="subtitle">Cliquez sur le bouton "Voter" pour donner votre voix. Vous pouvez voter plusieurs fois (pour la démo).</p>
+        <p class="subtitle">Cliquez sur le bouton "Voter" pour donner votre voix. Une seule voix par personne !</p>
 
         <div class="songs-grid" id="songsGrid">
             <!-- Les cartes seront générées par JavaScript -->
@@ -40,31 +40,56 @@
     </footer>
 
     <script>
-        // Liste des musiques (noms et fichiers)
+        // Liste des musiques (noms et fichiers) - vos chemins
         const songs = [
-            { id: 1, title: "Musique 1", file: "asset/song/Amon Tobin - Trickstep (Pacific Rift Mix) (MotorStorm Pacific Rift OST).mp3" },
-            { id: 2, title: "Musique 2", file: "asset/song/Animal Alpha - Fire! Fire! Fire! (MotorStorm Pacific Rift OST).mp3" },
-            { id: 3, title: "Musique 3", file: "asset/song/Break The Curse pWOT DISCORD.mp3" },
-            { id: 4, title: "Musique 4", file: "asset/song/Hadouken! - Liquid Lives [[Noisia Remix]] HD.mp3" },
-            { id: 5, title: "Musique 5", file: "asset/song/Lalula - Supa Bajo (Instrumental) (MotorStorm Pacific Rift OST).mp3" },
-            { id: 6, title: "Musique 6", file: "asset/song/OIIA x We Wish You a Merry Christmas (Full Audio) [4K].mp3" }
+            { id: 1, title: "Amon Tobin - Trickstep (Pacific Rift Mix)", file: "asset/song/Amon Tobin - Trickstep (Pacific Rift Mix) (MotorStorm Pacific Rift OST).mp3" },
+            { id: 2, title: "Animal Alpha - Fire! Fire! Fire!", file: "asset/song/Animal Alpha - Fire! Fire! Fire! (MotorStorm Pacific Rift OST).mp3" },
+            { id: 3, title: "Break The Curse", file: "asset/song/Break The Curse pWOT DISCORD.mp3" },
+            { id: 4, title: "Hadouken! - Liquid Lives (Noisia Remix)", file: "asset/song/Hadouken! - Liquid Lives [[Noisia Remix]] HD.mp3" },
+            { id: 5, title: "Lalula - Supa Bajo (Instrumental)", file: "asset/song/Lalula - Supa Bajo (Instrumental) (MotorStorm Pacific Rift OST).mp3" },
+            { id: 6, title: "OIIA x We Wish You a Merry Christmas", file: "asset/song/OIIA x We Wish You a Merry Christmas (Full Audio) [4K].mp3" }
         ];
 
-        // Clé pour le localStorage
+        // Clés pour le localStorage
         const STORAGE_KEY = 'musicVotes';
+        const VOTED_KEY = 'hasVoted';
 
         // Charger les votes depuis le localStorage ou initialiser à zéro
         let votes = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-        // Initialiser les votes pour chaque musique si absents
         songs.forEach(song => {
-            if (!votes[song.id]) {
-                votes[song.id] = 0;
-            }
+            if (!votes[song.id]) votes[song.id] = 0;
         });
+
+        // Vérifier si l'utilisateur a déjà voté
+        let hasVoted = localStorage.getItem(VOTED_KEY) === 'true';
 
         // Sauvegarder les votes
         function saveVotes() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(votes));
+        }
+
+        // Marquer comme ayant voté et désactiver les boutons
+        function setVoted() {
+            hasVoted = true;
+            localStorage.setItem(VOTED_KEY, 'true');
+            disableVoteButtons();
+        }
+
+        // Désactiver tous les boutons de vote
+        function disableVoteButtons() {
+            document.querySelectorAll('.vote-btn').forEach(btn => {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+            });
+            // Afficher un message
+            const messageDiv = document.getElementById('voteMessage') || document.createElement('div');
+            if (!messageDiv.id) {
+                messageDiv.id = 'voteMessage';
+                messageDiv.className = 'vote-message';
+                document.querySelector('.songs-grid').insertAdjacentElement('afterend', messageDiv);
+            }
+            messageDiv.textContent = '✅ Vous avez déjà voté. Merci de votre participation !';
         }
 
         // Mettre à jour l'affichage des résultats
@@ -104,15 +129,26 @@
                 grid.appendChild(card);
             });
 
+            // Si l'utilisateur a déjà voté, désactiver les boutons
+            if (hasVoted) {
+                disableVoteButtons();
+            }
+
             // Ajouter les événements de vote
             document.querySelectorAll('.vote-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
+                    if (hasVoted) {
+                        alert('Vous avez déjà voté !');
+                        return;
+                    }
                     const id = e.target.getAttribute('data-id');
                     votes[id] = (votes[id] || 0) + 1;
                     saveVotes();
                     // Mettre à jour le badge
                     document.getElementById(`vote-${id}`).textContent = votes[id] + ' voix';
                     updateResults();
+                    // Marquer comme voté et désactiver
+                    setVoted();
                 });
             });
         }
