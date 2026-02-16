@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vote - Vote Musical</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="logo">🎵 VoteMusic</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Accueil</a></li>
+                <li><a href="vote.html" class="active">Voter</a></li>
+                <li><a href="video.html">Présentation</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <h1>Votez pour votre musique préférée</h1>
+        <p class="subtitle">Cliquez sur le bouton "Voter" pour donner votre voix. Vous pouvez voter plusieurs fois (pour la démo).</p>
+
+        <div class="songs-grid" id="songsGrid">
+            <!-- Les cartes seront générées par JavaScript -->
+        </div>
+
+        <div class="results">
+            <h2>Résultats des votes</h2>
+            <div id="resultsChart" class="results-chart">
+                <!-- Les barres de résultats seront générées dynamiquement -->
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 VoteMusic - Tous droits réservés</p>
+    </footer>
+
+    <script>
+        // Liste des musiques (noms et fichiers)
+        const songs = [
+            { id: 1, title: "Musique 1", file: "asset/song/Amon Tobin - Trickstep (Pacific Rift Mix) (MotorStorm Pacific Rift OST).mp3" },
+            { id: 2, title: "Musique 2", file: "asset/song/Animal Alpha - Fire! Fire! Fire! (MotorStorm Pacific Rift OST).mp3" },
+            { id: 3, title: "Musique 3", file: "asset/song/Break The Curse pWOT DISCORD.mp3" },
+            { id: 4, title: "Musique 4", file: "asset/song/Hadouken! - Liquid Lives [[Noisia Remix]] HD.mp3" },
+            { id: 5, title: "Musique 5", file: "asset/song/Lalula - Supa Bajo (Instrumental) (MotorStorm Pacific Rift OST).mp3" },
+            { id: 6, title: "Musique 6", file: "asset/song/OIIA x We Wish You a Merry Christmas (Full Audio) [4K].mp3" }
+        ];
+
+        // Clé pour le localStorage
+        const STORAGE_KEY = 'musicVotes';
+
+        // Charger les votes depuis le localStorage ou initialiser à zéro
+        let votes = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+        // Initialiser les votes pour chaque musique si absents
+        songs.forEach(song => {
+            if (!votes[song.id]) {
+                votes[song.id] = 0;
+            }
+        });
+
+        // Sauvegarder les votes
+        function saveVotes() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(votes));
+        }
+
+        // Mettre à jour l'affichage des résultats
+        function updateResults() {
+            const resultsDiv = document.getElementById('resultsChart');
+            const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0);
+            let html = '';
+            songs.forEach(song => {
+                const count = votes[song.id] || 0;
+                const percentage = totalVotes > 0 ? (count / totalVotes * 100).toFixed(1) : 0;
+                html += `
+                    <div class="result-bar">
+                        <span class="song-title">${song.title}</span>
+                        <div class="bar-container">
+                            <div class="bar" style="width: ${percentage}%;"></div>
+                        </div>
+                        <span class="vote-count">${count} voix (${percentage}%)</span>
+                    </div>
+                `;
+            });
+            resultsDiv.innerHTML = html;
+        }
+
+        // Générer les cartes des musiques
+        function renderSongs() {
+            const grid = document.getElementById('songsGrid');
+            grid.innerHTML = '';
+            songs.forEach(song => {
+                const card = document.createElement('div');
+                card.className = 'song-card';
+                card.innerHTML = `
+                    <h3>${song.title}</h3>
+                    <audio controls src="${song.file}"></audio>
+                    <button class="vote-btn" data-id="${song.id}">Voter</button>
+                    <span class="vote-badge" id="vote-${song.id}">${votes[song.id]} voix</span>
+                `;
+                grid.appendChild(card);
+            });
+
+            // Ajouter les événements de vote
+            document.querySelectorAll('.vote-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    votes[id] = (votes[id] || 0) + 1;
+                    saveVotes();
+                    // Mettre à jour le badge
+                    document.getElementById(`vote-${id}`).textContent = votes[id] + ' voix';
+                    updateResults();
+                });
+            });
+        }
+
+        // Initialisation
+        renderSongs();
+        updateResults();
+    </script>
+</body>
+</html>
