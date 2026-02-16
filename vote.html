@@ -24,7 +24,7 @@
 
     <main class="container">
         <h1>Votez pour votre musique préférée</h1>
-        <p class="subtitle">Cliquez sur "Voter" (une seule fois par personne)</p>
+        <p class="subtitle">Cliquez sur "Voter" pour donner votre voix (une seule fois par personne)</p>
 
         <div class="songs-grid" id="songsGrid"></div>
 
@@ -39,11 +39,11 @@
     </footer>
 
     <script>
-        // ========== CONFIGURATION FIREBASE ==========
+        // ========== CONFIGURATION FIREBASE (AVEC LA BONNE URL) ==========
         firebase.initializeApp({
             apiKey: "AIzaSyA1JNHr7GYMMQGhpHFnX4zH0_1vJ4OfRXo",
             authDomain: "testvotecommun.firebaseapp.com",
-            databaseURL: "https://testvotecommun-default-rtdb.firebaseio.com/",
+            databaseURL: "https://testvotecommun-default-rtdb.europe-west1.firebasedatabase.app/", // URL CORRECTE
             projectId: "testvotecommun",
             storageBucket: "testvotecommun.firebasestorage.app",
             messagingSenderId: "1024528698634",
@@ -205,7 +205,7 @@
         renderSongs();
 
         // Pour le debug : afficher l'état de connexion
-        console.log("Firebase initialisé, en attente des données...");
+        console.log("Firebase initialisé avec l'URL:", "https://testvotecommun-default-rtdb.europe-west1.firebasedatabase.app/");
     </script>
 </body>
 </html>
