@@ -6,25 +6,9 @@
     <title>Vote - Vote Musical</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
-    <script>
-        // Configuration Firebase (la vôtre)
-        const firebaseConfig = {
-          apiKey: "AIzaSyA1JNHr7GYMMQGhpHFnX4zH0_1vJ4OfRXo",
-          authDomain: "testvotecommun.firebaseapp.com",
-          databaseURL: "https://testvotecommun-default-rtdb.firebaseio.com/", // Vérifiez cette URL
-          projectId: "testvotecommun",
-          storageBucket: "testvotecommun.firebasestorage.app",
-          messagingSenderId: "1024528698634",
-          appId: "1:1024528698634:web:3427a41ce0d6f37c0dfef3"
-        };
-      
-        // Initialiser Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-      </script>
+    <!-- Firebase SDK (versions compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
 <body>
     <header>
@@ -59,125 +43,134 @@
     </footer>
 
     <script>
-        // Liste des musiques (vos titres et chemins)
+        // ==================== CONFIGURATION FIREBASE ====================
+        const firebaseConfig = {
+            apiKey: "AIzaSyA1JNHr7GYMMQGhpHFnX4zH0_1vJ4OfRXo",
+            authDomain: "testvotecommun.firebaseapp.com",
+            databaseURL: "https://testvotecommun-default-rtdb.firebaseio.com/",
+            projectId: "testvotecommun",
+            storageBucket: "testvotecommun.firebasestorage.app",
+            messagingSenderId: "1024528698634",
+            appId: "1:1024528698634:web:3427a41ce0d6f37c0dfef3"
+        };
+
+        // Initialiser Firebase (version compat)
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // ==================== DONNÉES ====================
         const songs = [
-          { id: 1, title: "Amon Tobin - Trickstep (Pacific Rift Mix)", file: "asset/song/Amon Tobin - Trickstep (Pacific Rift Mix) (MotorStorm Pacific Rift OST).mp3" },
-          { id: 2, title: "Animal Alpha - Fire! Fire! Fire!", file: "asset/song/Animal Alpha - Fire! Fire! Fire! (MotorStorm Pacific Rift OST).mp3" },
-          { id: 3, title: "Break The Curse", file: "asset/song/Break The Curse pWOT DISCORD.mp3" },
-          { id: 4, title: "Hadouken! - Liquid Lives (Noisia Remix)", file: "asset/song/Hadouken! - Liquid Lives [[Noisia Remix]] HD.mp3" },
-          { id: 5, title: "Lalula - Supa Bajo (Instrumental)", file: "asset/song/Lalula - Supa Bajo (Instrumental) (MotorStorm Pacific Rift OST).mp3" },
-          { id: 6, title: "OIIA x We Wish You a Merry Christmas", file: "asset/song/OIIA x We Wish You a Merry Christmas (Full Audio) [4K].mp3" }
+            { id: 1, title: "Amon Tobin - Trickstep (Pacific Rift Mix)", file: "asset/song/Amon Tobin - Trickstep (Pacific Rift Mix) (MotorStorm Pacific Rift OST).mp3" },
+            { id: 2, title: "Animal Alpha - Fire! Fire! Fire!", file: "asset/song/Animal Alpha - Fire! Fire! Fire! (MotorStorm Pacific Rift OST).mp3" },
+            { id: 3, title: "Break The Curse", file: "asset/song/Break The Curse pWOT DISCORD.mp3" },
+            { id: 4, title: "Hadouken! - Liquid Lives (Noisia Remix)", file: "asset/song/Hadouken! - Liquid Lives [[Noisia Remix]] HD.mp3" },
+            { id: 5, title: "Lalula - Supa Bajo (Instrumental)", file: "asset/song/Lalula - Supa Bajo (Instrumental) (MotorStorm Pacific Rift OST).mp3" },
+            { id: 6, title: "OIIA x We Wish You a Merry Christmas", file: "asset/song/OIIA x We Wish You a Merry Christmas (Full Audio) [4K].mp3" }
         ];
-      
-        // Référence vers le nœud "votes" dans Firebase
+
+        // Référence Firebase vers le nœud "votes"
         const votesRef = database.ref('votes');
-      
-        // Vérifier si ce navigateur a déjà voté (localStorage)
+
+        // Clé localStorage pour savoir si ce navigateur a déjà voté
         const VOTED_KEY = 'hasVoted';
         let hasVoted = localStorage.getItem(VOTED_KEY) === 'true';
-      
-        // Fonction pour mettre à jour l'affichage des résultats (barres et pourcentages)
+
+        // ==================== FONCTIONS D'AFFICHAGE ====================
         function updateResults(snapshot) {
-          const votes = snapshot.val() || {}; // votes venant de Firebase
-          const resultsDiv = document.getElementById('resultsChart');
-          const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0);
-          let html = '';
-          songs.forEach(song => {
-            const count = votes[song.id] || 0;
-            const percentage = totalVotes > 0 ? (count / totalVotes * 100).toFixed(1) : 0;
-            html += `
-              <div class="result-bar">
-                <span class="song-title">${song.title}</span>
-                <div class="bar-container">
-                  <div class="bar" style="width: ${percentage}%;"></div>
-                </div>
-                <span class="vote-count">${count} voix (${percentage}%)</span>
-              </div>
-            `;
-          });
-          resultsDiv.innerHTML = html;
-        }
-      
-        // Fonction pour mettre à jour les badges de vote sur les cartes
-        function updateBadges(snapshot) {
-          const votes = snapshot.val() || {};
-          songs.forEach(song => {
-            const badge = document.getElementById(`vote-${song.id}`);
-            if (badge) {
-              badge.textContent = (votes[song.id] || 0) + ' voix';
-            }
-          });
-        }
-      
-        // Écouter les changements en temps réel sur Firebase
-        votesRef.on('value', (snapshot) => {
-          updateResults(snapshot);
-          updateBadges(snapshot);
-        });
-      
-        // Désactiver les boutons si l'utilisateur a déjà voté (local)
-        function disableVoteButtons() {
-          document.querySelectorAll('.vote-btn').forEach(btn => {
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
-            btn.style.cursor = 'not-allowed';
-          });
-          // Ajouter un message
-          let messageDiv = document.getElementById('voteMessage');
-          if (!messageDiv) {
-            messageDiv = document.createElement('div');
-            messageDiv.id = 'voteMessage';
-            messageDiv.className = 'vote-message';
-            document.querySelector('.songs-grid').insertAdjacentElement('afterend', messageDiv);
-          }
-          messageDiv.textContent = '✅ Vous avez déjà voté. Merci de votre participation !';
-        }
-      
-        // Générer les cartes des musiques
-        function renderSongs() {
-          const grid = document.getElementById('songsGrid');
-          grid.innerHTML = '';
-          songs.forEach(song => {
-            const card = document.createElement('div');
-            card.className = 'song-card';
-            card.innerHTML = `
-              <h3>${song.title}</h3>
-              <audio controls src="${song.file}"></audio>
-              <button class="vote-btn" data-id="${song.id}">Voter</button>
-              <span class="vote-badge" id="vote-${song.id}">0 voix</span>
-            `;
-            grid.appendChild(card);
-          });
-      
-          // Si l'utilisateur a déjà voté, désactiver les boutons
-          if (hasVoted) {
-            disableVoteButtons();
-          }
-      
-          // Ajouter les événements de vote
-          document.querySelectorAll('.vote-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-              if (hasVoted) {
-                alert('Vous avez déjà voté !');
-                return;
-              }
-              const id = e.target.getAttribute('data-id');
-              // Incrémenter le vote dans Firebase de manière atomique
-              const songVoteRef = database.ref('votes/' + id);
-              songVoteRef.transaction((currentVotes) => {
-                return (currentVotes || 0) + 1;
-              }).then(() => {
-                // Marquer comme voté dans localStorage
-                hasVoted = true;
-                localStorage.setItem(VOTED_KEY, 'true');
-                disableVoteButtons();
-              });
+            const votes = snapshot.val() || {};
+            const resultsDiv = document.getElementById('resultsChart');
+            const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0);
+            let html = '';
+            songs.forEach(song => {
+                const count = votes[song.id] || 0;
+                const percentage = totalVotes > 0 ? (count / totalVotes * 100).toFixed(1) : 0;
+                html += `
+                    <div class="result-bar">
+                        <span class="song-title">${song.title}</span>
+                        <div class="bar-container">
+                            <div class="bar" style="width: ${percentage}%;"></div>
+                        </div>
+                        <span class="vote-count">${count} voix (${percentage}%)</span>
+                    </div>
+                `;
             });
-          });
+            resultsDiv.innerHTML = html;
         }
-      
-        // Initialisation
+
+        function updateBadges(snapshot) {
+            const votes = snapshot.val() || {};
+            songs.forEach(song => {
+                const badge = document.getElementById(`vote-${song.id}`);
+                if (badge) {
+                    badge.textContent = (votes[song.id] || 0) + ' voix';
+                }
+            });
+        }
+
+        function disableVoteButtons() {
+            document.querySelectorAll('.vote-btn').forEach(btn => {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+            });
+            let messageDiv = document.getElementById('voteMessage');
+            if (!messageDiv) {
+                messageDiv = document.createElement('div');
+                messageDiv.id = 'voteMessage';
+                messageDiv.className = 'vote-message';
+                document.querySelector('.songs-grid').insertAdjacentElement('afterend', messageDiv);
+            }
+            messageDiv.textContent = '✅ Vous avez déjà voté. Merci de votre participation !';
+        }
+
+        function renderSongs() {
+            const grid = document.getElementById('songsGrid');
+            grid.innerHTML = '';
+            songs.forEach(song => {
+                const card = document.createElement('div');
+                card.className = 'song-card';
+                card.innerHTML = `
+                    <h3>${song.title}</h3>
+                    <audio controls src="${song.file}"></audio>
+                    <button class="vote-btn" data-id="${song.id}">Voter</button>
+                    <span class="vote-badge" id="vote-${song.id}">0 voix</span>
+                `;
+                grid.appendChild(card);
+            });
+
+            if (hasVoted) {
+                disableVoteButtons();
+            }
+
+            document.querySelectorAll('.vote-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    if (hasVoted) {
+                        alert('Vous avez déjà voté !');
+                        return;
+                    }
+                    const id = e.target.getAttribute('data-id');
+                    const songVoteRef = database.ref('votes/' + id);
+                    songVoteRef.transaction((currentVotes) => {
+                        return (currentVotes || 0) + 1;
+                    }).then(() => {
+                        hasVoted = true;
+                        localStorage.setItem(VOTED_KEY, 'true');
+                        disableVoteButtons();
+                    }).catch((error) => {
+                        console.error("Erreur de vote : ", error);
+                        alert("Une erreur est survenue. Veuillez réessayer.");
+                    });
+                });
+            });
+        }
+
+        // ==================== INITIALISATION ====================
+        votesRef.on('value', (snapshot) => {
+            updateResults(snapshot);
+            updateBadges(snapshot);
+        });
+
         renderSongs();
-      </script>
+    </script>
 </body>
 </html>
